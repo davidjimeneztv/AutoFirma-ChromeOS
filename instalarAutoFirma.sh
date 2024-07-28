@@ -44,16 +44,14 @@ instalar() {
 
     # Descargar e instalar AutoFirma
     echo "Descargando e instalando AutoFirma..."
-    wget https:// -O AutoFirma_Linux.zip
+    wget https://raw.githubusercontent.com/davidjimeneztv/AutoFirma-ChromeOS/main/AutoFirma_Linux_Debian.zip?token=GHSAT0AAAAAACVMSU5ABEAXB4TEEYFQD5LIZVGKWKQ -O AutoFirma_Linux.zip
     unzip AutoFirma_Linux.zip
-    cd AutoFirma
-    sudo ./AutoFirma_Install.run
+    rm AutoFirma_Linux.zip
 
-    # Limpiar archivos descargados
-    cd ..
-    rm -rf AutoFirma AutoFirma_Linux.zip
+    sudo dpkg –i AutoFirma*.deb
 
-    echo "Instalación completada."
+    echo "AutoFirma se instaló correctamente."
+    autofirma
 }
 
 # Función para desinstalar AutoFirma y opcionalmente Firefox
