@@ -45,7 +45,7 @@ instalar() {
 
     # Descargar e instalar AutoFirma
     echo "[INFO] >>> Descargando e instalando AutoFirma..."
-    wget https://raw.githubusercontent.com/davidjimeneztv/AutoFirma-ChromeOS/main/AutoFirma_Linux_Debian.zip?token=GHSAT0AAAAAACVMSU5ABEAXB4TEEYFQD5LIZVGKWKQ -O AutoFirma_Linux.zip
+    wget https://github.com/davidjimeneztv/AutoFirma-ChromeOS/raw/main/AutoFirma_Linux_Debian.zip -O AutoFirma_Linux.zip
     unzip AutoFirma_Linux.zip
     rm AutoFirma_Linux.zip
 
