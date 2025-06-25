@@ -5,9 +5,27 @@ mostrar_ayuda() {
     echo "Instalador de AutoFirma para Chrome OS (https://github.com/davidjimeneztv/AutoFirma-ChromeOS)"
     echo "---------------------------------------"
     echo "Para instalar AutoFirma, introduce 'sudo bash $0 -i'."
+    echo "Para actualizar AutoFirma, introduce 'sudo bash $0 -a'."
     echo "Para desinstalar AutoFirma, introduce 'sudo bash $0 -d'."
     echo "Para leer la ayuda, introduce 'sudo bash $0 -h'."
     exit 0
+}
+
+# Función para descargar e instalar AutoFirma desde el sitio oficial
+instalar_autofirma_oficial() {
+    echo "[INFO] >>> Descargando AutoFirma desde el servidor oficial..."
+    wget https://firmaelectronica.gob.es/content/dam/firmaelectronica/descargas-software/AutoFirma_Linux_Debian.zip -O AutoFirma_Linux.zip
+
+    echo "[INFO] >>> Descomprimiendo archivo..."
+    unzip AutoFirma_Linux.zip
+    rm AutoFirma_Linux.zip
+
+    echo "[INFO] >>> Instalando AutoFirma..."
+    sudo dpkg -i AutoFirma*.deb
+    rm AutoFirma*.deb
+
+    echo "[RESULTADO] >>> AutoFirma se instaló/actualizó correctamente."
+    echo "[INFO] >>> Compruebe el menú de aplicaciones para verificar su presencia."
 }
 
 # Función para instalar AutoFirma y opcionalmente Firefox
@@ -43,17 +61,13 @@ instalar() {
         echo "[RESULTADO] >>> Mozilla Firefox se instaló correctamente."
     fi
 
-    # Descargar e instalar AutoFirma
-    echo "[INFO] >>> Descargando e instalando AutoFirma..."
-    wget https://github.com/davidjimeneztv/AutoFirma-ChromeOS/raw/main/AutoFirma_Linux_Debian.zip -O AutoFirma_Linux.zip
-    unzip AutoFirma_Linux.zip
-    rm AutoFirma_Linux.zip
+    instalar_autofirma_oficial
+}
 
-    sudo dpkg -i AutoFirma*.deb
-    rm AutoFirma*.deb
-
-    echo "[RESULTADO] >>> AutoFirma se instaló correctamente."
-    echo "[INFO] >>> Compruebe el menú de aplicaciones y compruebe que se instaló."
+# Función para actualizar AutoFirma
+actualizar() {
+    echo "[INFO] >>> Actualizando AutoFirma..."
+    instalar_autofirma_oficial
 }
 
 # Función para desinstalar AutoFirma y opcionalmente Firefox
@@ -94,6 +108,9 @@ fi
 case $1 in
     -i)
         instalar
+        ;;
+    -a)
+        actualizar
         ;;
     -d)
         desinstalar
