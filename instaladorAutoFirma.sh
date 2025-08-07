@@ -14,7 +14,7 @@ mostrar_ayuda() {
 # Función para descargar e instalar AutoFirma desde el sitio oficial
 instalar_autofirma_oficial() {
     echo "[INFO] >>> Descargando AutoFirma desde el servidor oficial..."
-    wget https://firmaelectronica.gob.es/content/dam/firmaelectronica/descargas-software/AutoFirma_Linux_Debian.zip -O AutoFirma_Linux.zip
+    wget https://firmaelectronica.gob.es/content/dam/firmaelectronica/descargas-software/autofirma19/Autofirma_Linux_Debian.zip -O AutoFirma_Linux.zip
 
     echo "[INFO] >>> Descomprimiendo archivo..."
     unzip AutoFirma_Linux.zip
