@@ -21,8 +21,8 @@ instalar_autofirma_oficial() {
     rm AutoFirma_Linux.zip
 
     echo "[INFO] >>> Instalando AutoFirma..."
-    sudo dpkg -i AutoFirma*.deb
-    rm AutoFirma*.deb
+    sudo dpkg -i autofirma*.deb
+    rm autofirma*.deb
 
     echo "[RESULTADO] >>> AutoFirma se instaló/actualizó correctamente."
     echo "[INFO] >>> Compruebe el menú de aplicaciones para verificar su presencia."
