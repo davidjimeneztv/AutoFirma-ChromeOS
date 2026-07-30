@@ -1,121 +1,438 @@
 #!/bin/bash
 
-# Función para mostrar ayuda
-mostrar_ayuda() {
-    echo "Instalador de AutoFirma para Chrome OS (https://github.com/davidjimeneztv/AutoFirma-ChromeOS)"
-    echo "---------------------------------------"
-    echo "Para instalar AutoFirma, introduce 'sudo bash $0 -i'."
-    echo "Para actualizar AutoFirma, introduce 'sudo bash $0 -a'."
-    echo "Para desinstalar AutoFirma, introduce 'sudo bash $0 -d'."
-    echo "Para leer la ayuda, introduce 'sudo bash $0 -h'."
-    exit 0
+set -euo pipefail
+
+################################################################################
+# AutoFirma para ChromeOS
+# https://github.com/davidjimeneztv/AutoFirma-ChromeOS
+################################################################################
+
+VERSION="2.0"
+
+AUTOFIRMA_URL="https://firmaelectronica.gob.es/content/dam/firmaelectronica/descargas-software/autofirma19/Autofirma_Linux_Debian.zip"
+
+TMP="/tmp/autofirma-installer"
+
+ZIP="$TMP/autofirma.zip"
+
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[1;33m"
+BLUE="\033[0;34m"
+NC="\033[0m"
+
+################################################################################
+
+info() {
+
+echo -e "${BLUE}[INFO]${NC} $1"
+
 }
 
-# Función para descargar e instalar AutoFirma desde el sitio oficial
-instalar_autofirma_oficial() {
-    echo "[INFO] >>> Descargando AutoFirma desde el servidor oficial..."
-    wget https://firmaelectronica.gob.es/content/dam/firmaelectronica/descargas-software/autofirma19/Autofirma_Linux_Debian.zip -O AutoFirma_Linux.zip
+ok() {
 
-    echo "[INFO] >>> Descomprimiendo archivo..."
-    unzip AutoFirma_Linux.zip
-    rm AutoFirma_Linux.zip
+echo -e "${GREEN}[OK]${NC} $1"
 
-    echo "[INFO] >>> Instalando AutoFirma..."
-    sudo dpkg -i autofirma*.deb
-    rm autofirma*.deb
-
-    echo "[RESULTADO] >>> AutoFirma se instaló/actualizó correctamente."
-    echo "[INFO] >>> Compruebe el menú de aplicaciones para verificar su presencia."
 }
 
-# Función para instalar AutoFirma y opcionalmente Firefox
-instalar() {
-    echo "[INFO] >>> Iniciando la instalación de AutoFirma..."
+warn() {
 
-    sudo apt update
-    sudo apt upgrade -y
-    sudo apt install -y wget gnupg software-properties-common unzip libnspr4 libnss3 libnss3-tools default-jre
+echo -e "${YELLOW}[AVISO]${NC} $1"
 
-    # Preguntar si se quiere instalar Firefox
-    read -p "[PREGUNTA] >>> ¿Quieres instalar Mozilla Firefox junto con AutoFirma? Será necesario para firmar documentos de Sedes Electrónicas e identificarte en alguna de ellas. (s/n): " instalar_firefox
-    if [[ "$instalar_firefox" == "s" || "$instalar_firefox" == "S" ]]; then
-        echo "[INFO] >>> Instalando Mozilla Firefox..."
-        echo "[INFO] >>> Instalación de AutoFirma pausada hasta instalar Mozilla Firefox"
-        
-        sudo install -d -m 0755 /etc/apt/keyrings
-        
-        wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | sudo tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null
-        
-        gpg -n -q --import --import-options import-show /etc/apt/keyrings/packages.mozilla.org.asc | awk '/pub/{getline; gsub(/^ +| +$/,""); if($0 == "35BAA0B33E9EB396F59CA838C0BA5CE6DC6315A3") print "\nLa huella digital coincide ("$0").\n"; else print "\nError de verificación: la huella digital ("$0") no coincide con la esperada.\n"}'
-        
-        echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | sudo tee /etc/apt/sources.list.d/mozilla.list > /dev/null
-        
-        echo '
-        Package: *
-        Pin: origin packages.mozilla.org
-        Pin-Priority: 1000
-        ' | sudo tee /etc/apt/preferences.d/mozilla
-        
-        sudo apt-get update && sudo apt-get install -y firefox
-        sudo apt-get install -y firefox-l10n-es
-        echo "[RESULTADO] >>> Mozilla Firefox se instaló correctamente."
-    fi
-
-    instalar_autofirma_oficial
 }
 
-# Función para actualizar AutoFirma
-actualizar() {
-    echo "[INFO] >>> Actualizando AutoFirma..."
-    instalar_autofirma_oficial
+error() {
+
+echo -e "${RED}[ERROR]${NC} $1"
+
 }
 
-# Función para desinstalar AutoFirma y opcionalmente Firefox
-desinstalar() {
-    echo "[INFO] >>> Desinstalando AutoFirma de Chrome OS..."
-    sudo apt-get remove libnspr4 libnss3 libnss3-tools default-jre autofirma
-    echo "[RESULTADO] >>> AutoFirma se desinstaló correctamente."
+################################################################################
 
-    # Preguntar si se quiere desinstalar Firefox
-    read -p "[PREGUNTA] >>> ¿Quieres desinstalar Mozilla Firefox? No seleccione esta opción si no tiene instalado Firefox (s/n): " desinstalar_firefox
-    if [[ "$desinstalar_firefox" == "s" || "$desinstalar_firefox" == "S" ]]; then
-        echo "[INFO] >>> Desinstalando Mozilla Firefox..."
+ayuda() {
 
-        sudo rm /etc/apt/keyrings/packages.mozilla.org.asc
-        sudo rm /etc/apt/sources.list.d/mozilla.list
-        sudo rm /etc/apt/preferences.d/mozilla
-        sudo apt-get remove --purge -y firefox firefox-esr activity-aware-firefox webext-ublock-origin-firefox libfirefox-marionette-perl
-        sudo apt-get remove --purge -y firefox-esr-l10n-*
+cat <<EOF
 
-        echo "[RESULTADO] >>> Mozilla Firefox se desinstaló correctamente."
-    fi
+AutoFirma para ChromeOS
 
-    sudo apt-get autoremove
+Instalar:
+
+sudo bash $0 -i
+
+Actualizar:
+
+sudo bash $0 -a
+
+Desinstalar:
+
+sudo bash $0 -d
+
+Ayuda:
+
+sudo bash $0 -h
+
+EOF
+
+exit 0
+
 }
 
-# Verificar si se recibe -h para mostrar ayuda
-if [ "$1" == "-h" ]; then
-    mostrar_ayuda
-fi
+################################################################################
 
-# Verificar si se ejecuta como root
+comprobar_root() {
+
 if [ "$EUID" -ne 0 ]; then
-    echo "[ERROR] >>> Por favor, ejecuta este script con privilegios de superadministrador. Ej: sudo bash $0"
-    exit 0
+
+error "Ejecute este script con sudo."
+
+exit 1
+
 fi
 
-# Verificar los argumentos y ejecutar las funciones correspondientes
-case $1 in
-    -i)
-        instalar
-        ;;
-    -a)
-        actualizar
-        ;;
-    -d)
-        desinstalar
-        ;;
-    *)
-        mostrar_ayuda
-        ;;
+}
+
+################################################################################
+
+crear_tmp() {
+
+rm -rf "$TMP"
+
+mkdir -p "$TMP"
+
+}
+
+################################################################################
+
+dependencias() {
+
+info "Actualizando repositorios..."
+
+apt update
+
+PKGS=(
+wget
+curl
+gnupg
+ca-certificates
+unzip
+default-jre
+libnspr4
+libnss3
+libnss3-tools
+xdg-utils
+)
+
+if apt-cache show software-properties-common >/dev/null 2>&1; then
+PKGS+=(software-properties-common)
+fi
+
+info "Instalando dependencias..."
+
+apt install -y "${PKGS[@]}"
+
+ok "Dependencias instaladas."
+
+}
+
+################################################################################
+
+instalar_firefox() {
+
+    read -rp "¿Desea instalar Mozilla Firefox? (s/n): " RESP
+
+    case "$RESP" in
+        s|S|si|SI|sí|Sí) ;;
+        *) return 0 ;;
+    esac
+
+    info "Instalando Firefox..."
+
+    # Repositorio oficial Mozilla
+    install -d -m 0755 /etc/apt/keyrings
+
+    if [ ! -f /etc/apt/keyrings/packages.mozilla.org.asc ]; then
+        wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg \
+            -O /etc/apt/keyrings/packages.mozilla.org.asc
+    fi
+
+    cat >/etc/apt/sources.list.d/mozilla.list <<EOF
+deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main
+EOF
+
+    cat >/etc/apt/preferences.d/mozilla <<EOF
+Package: *
+Pin: origin packages.mozilla.org
+Pin-Priority: 1000
+EOF
+
+    apt update
+
+    PAQUETE=""
+
+    # Intentar firefox
+    if apt install -y firefox; then
+        PAQUETE="firefox"
+    elif apt install -y firefox-esr; then
+        PAQUETE="firefox-esr"
+    else
+
+        error "No ha sido posible instalar Firefox."
+
+        read -rp "¿Continuar únicamente con AutoFirma? (s/n): " RESP2
+
+        case "$RESP2" in
+            s|S|si|SI|sí|Sí)
+                return 0
+                ;;
+            *)
+                exit 1
+                ;;
+        esac
+
+    fi
+
+    # Idioma (si existe)
+    apt install -y firefox-l10n-es 2>/dev/null || true
+    apt install -y firefox-esr-l10n-es 2>/dev/null || true
+
+    ok "$PAQUETE instalado correctamente."
+
+}
+
+################################################################################
+
+descargar_autofirma() {
+
+crear_tmp
+
+info "Descargando AutoFirma..."
+
+wget -O "$ZIP" "$AUTOFIRMA_URL"
+
+info "Descomprimiendo..."
+
+mkdir "$TMP/zip"
+
+unzip -oq "$ZIP" -d "$TMP/zip"
+
+cd "$TMP/zip"
+
+DEB=$(find . -name "*.deb" | head -n1)
+
+if [ -z "$DEB" ]; then
+
+error "No se encontró el paquete .deb."
+
+exit 1
+
+fi
+
+info "Instalando AutoFirma..."
+
+if ! dpkg -i "$DEB"; then
+
+    warn "Corrigiendo dependencias..."
+
+    apt-get install -f -y
+
+    info "Reintentando instalación..."
+
+    dpkg -i "$DEB"
+
+fi
+
+ok "AutoFirma instalada."
+
+rm -rf "$TMP"
+
+}
+
+################################################################################
+
+primera_ejecucion() {
+
+BINARIO=""
+
+if command -v AutoFirma >/dev/null 2>&1; then
+
+    BINARIO="$(command -v AutoFirma)"
+
+elif command -v autofirma >/dev/null 2>&1; then
+
+    BINARIO="$(command -v autofirma)"
+
+elif [ -x /usr/bin/AutoFirma ]; then
+
+    BINARIO="/usr/bin/AutoFirma"
+
+elif [ -x /usr/bin/autofirma ]; then
+
+    BINARIO="/usr/bin/autofirma"
+
+fi
+
+if [ -n "$BINARIO" ]; then
+
+    info "Realizando primera ejecución..."
+
+    "$BINARIO" >/dev/null 2>&1 &
+
+    PID=$!
+
+    sleep 5
+
+    kill "$PID" >/dev/null 2>&1 || true
+
+fi
+
+}
+
+################################################################################
+
+instalar() {
+
+dependencias
+
+instalar_firefox
+
+descargar_autofirma
+
+primera_ejecucion
+
+echo
+
+ok "Instalación completada."
+
+echo
+
+echo "Si alguna sede electrónica no detecta AutoFirma:"
+
+echo
+
+echo "  1. Abra AutoFirma."
+
+echo "  2. Herramientas -> Restaurar instalación."
+
+echo "  3. Reinicie Firefox."
+
+echo
+
+}
+
+################################################################################
+
+actualizar() {
+
+descargar_autofirma
+
+primera_ejecucion
+
+ok "AutoFirma actualizada."
+
+}
+
+################################################################################
+
+desinstalar() {
+
+info "Desinstalando AutoFirma..."
+
+if dpkg -l | grep -q autofirma; then
+
+    apt purge -y autofirma
+
+fi
+
+apt autoremove -y
+
+rm -rf ~/.afirma 2>/dev/null || true
+rm -rf ~/.config/AutoFirma 2>/dev/null || true
+rm -rf ~/.config/autofirma 2>/dev/null || true
+
+echo
+
+read -rp "¿Desinstalar Firefox? (s/n): " RESP
+
+case "$RESP" in
+
+s|S|si|SI|sí|Sí)
+
+;;
+
+*)
+
+ok "Firefox conservado."
+
+return
+
+;;
+
 esac
+
+if dpkg -l | grep -q "^ii  firefox "; then
+
+    apt purge -y firefox
+
+fi
+
+if dpkg -l | grep -q "^ii  firefox-esr "; then
+
+    apt purge -y firefox-esr
+
+fi
+
+apt autoremove -y
+
+ok "Firefox desinstalado."
+
+ok "AutoFirma desinstalada."
+
+}
+
+################################################################################
+
+case "${1:-}" in
+
+-i)
+
+comprobar_root
+
+instalar
+
+;;
+
+-a)
+
+comprobar_root
+
+actualizar
+
+;;
+
+-d)
+
+comprobar_root
+
+desinstalar
+
+;;
+
+-h|--help|"")
+
+ayuda
+
+;;
+
+*)
+
+error "Opción no válida."
+
+echo
+
+ayuda
+
+;;
+
+esac
+
+exit 0
